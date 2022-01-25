@@ -1,11 +1,13 @@
 package com.falabella.product.api;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +36,9 @@ public class ProductController {
       try {
          if(Objects.isNull(sku)) throw new RequestException();
          Optional<ProductResponseDTO> productDTO = productService.getProductBySKU(sku);
-         return productDTO.map(dto -> new ResponseEntity<>(dto, HttpStatus.OK)).orElseGet(() -> ResponseEntity.notFound().build());
+         return productDTO
+               .map(productResponseDTO -> new ResponseEntity<>(productResponseDTO, HttpStatus.OK))
+               .orElseGet(() -> ResponseEntity.notFound().build());
       }catch (RequestException ex){
          return new ResponseEntity<>(new ProductResponseDTO(), HttpStatus.BAD_REQUEST);
       }
@@ -56,7 +60,7 @@ public class ProductController {
    @PatchMapping("/{sku}/sku")
    public ResponseEntity<Boolean> updateProduct(@PathVariable("sku") String sku, @RequestBody ProductRequestDTO productRequestDTO){
       try {
-         if(Objects.isNull(productRequestDTO)) throw new RequestException();
+         if(Objects.isNull(sku) || Objects.isNull(productRequestDTO)) throw new RequestException();
          if (Boolean.TRUE.equals(productService.updateProduct(sku, productRequestDTO)))
             return new ResponseEntity<>(Boolean.TRUE, HttpStatus.ACCEPTED);
          else
@@ -66,8 +70,27 @@ public class ProductController {
       }
    }
 
-   // TODO DELETE product
-
-   // TODO GET List with all products
-
+   @DeleteMapping("/{sku}/sku")
+   public ResponseEntity<Boolean> deleteProduct(@PathVariable("sku") String sku){
+      try {
+         if(Objects.isNull(sku)) throw new RequestException();
+         if (Boolean.TRUE.equals(productService.deleteProduct(sku)))
+            return new ResponseEntity<>(Boolean.TRUE, HttpStatus.ACCEPTED);
+         else
+            return new ResponseEntity<>(Boolean.FALSE, HttpStatus.NOT_MODIFIED);
+      }catch (RequestException ex){
+         return new ResponseEntity<>(Boolean.FALSE, HttpStatus.BAD_REQUEST);
+      }
+   }
+   @GetMapping("/")
+   public ResponseEntity<List<ProductResponseDTO>> getAllProducts() {
+      try {
+         Optional<List<ProductResponseDTO>> allProductsDTO = productService.getAllProducts();
+         return allProductsDTO
+               .map(productResponseDTOS -> new ResponseEntity<>(productResponseDTOS, HttpStatus.OK))
+               .orElseGet(() -> ResponseEntity.notFound().build());
+      }catch (RequestException ex){
+         return new ResponseEntity<>(List.of(new ProductResponseDTO()), HttpStatus.BAD_REQUEST);
+      }
+   }
 }

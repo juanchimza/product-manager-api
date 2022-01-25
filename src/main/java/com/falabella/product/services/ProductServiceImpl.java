@@ -1,5 +1,7 @@
 package com.falabella.product.services;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -41,11 +43,11 @@ public class ProductServiceImpl implements ProductService {
    @Override
    public Optional<ProductResponseDTO> getProductBySKU(String sku) {
       Optional<ProductEntity> productEntityOpt = productRepository.findBySku(sku);
-      return productEntityOpt.map(product -> Optional.ofNullable(productFactory.convertProductOnDTO(product))).orElse(null);
+      return productEntityOpt.map(productFactory::convertProductOnDTO);
    }
 
    @Override
-   public boolean createProduct(ProductResponseDTO productResponseDTO) {
+   public Boolean createProduct(ProductResponseDTO productResponseDTO) {
       try {
          ProductEntity productEntity = productFactory.createProduct(productResponseDTO);
          if (Objects.nonNull(productEntity)) {
@@ -90,5 +92,31 @@ public class ProductServiceImpl implements ProductService {
          return false;
       }
       return true;
+   }
+
+   @Override
+   public Boolean deleteProduct(String sku) {
+      try {
+      Optional<ProductEntity> productEntityOpt = productRepository.findBySku(sku);
+         if (productEntityOpt.isPresent()) {
+            ProductEntity productEntity = productEntityOpt.get();
+            productRepository.delete(productEntity);
+            logger.info("Product {} deleted.", sku);
+         } else {
+            logger.error("Product {} NOT deleted.", sku);
+         }
+      } catch (Exception e) {
+         logger.error(e.getMessage());
+         return false;
+      }
+      return true;
+   }
+
+   @Override
+   public Optional<List<ProductResponseDTO>> getAllProducts() {
+      List<ProductEntity> productEntities = productRepository.findAll();
+      List<ProductResponseDTO> productResponseDTOS = new ArrayList<>();
+      productEntities.stream().forEach(productEntity -> productResponseDTOS.add(getProductBySKU(productEntity.getSku()).get()));
+      return Optional.of(productResponseDTOS);
    }
 }
