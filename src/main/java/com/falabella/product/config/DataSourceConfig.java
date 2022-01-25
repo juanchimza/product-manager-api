@@ -1,4 +1,4 @@
-package com.falabella.product.repository;
+package com.falabella.product.config;
 
 import javax.sql.DataSource;
 
