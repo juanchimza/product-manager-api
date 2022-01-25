@@ -1,5 +1,6 @@
 package com.falabella.product.services;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -7,29 +8,52 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.falabella.product.domain.BrandEntity;
+import com.falabella.product.domain.ImageEntity;
 import com.falabella.product.domain.ProductEntity;
-import com.falabella.product.dto.ProductDTO;
+import com.falabella.product.dto.ProductRequestDTO;
+import com.falabella.product.dto.ProductResponseDTO;
 import com.falabella.product.factories.ProductFactory;
+import com.falabella.product.repository.BrandRepository;
+import com.falabella.product.repository.ImageRepository;
 import com.falabella.product.repository.ProductRepository;
 
 @Service
 public class ProductServiceImpl implements ProductService {
 
    private final ProductFactory productFactory;
+
    private final ProductRepository productRepository;
+   private final BrandRepository brandRepository;
+   private final ImageRepository imageRepository;
+
    private final Logger logger;
 
-   @Override
-   public Optional<ProductDTO> getProductBySKU(String sku) {
-      Optional<ProductEntity> productEntity = productRepository.findBySku(sku);
-      return productEntity.map(product -> Optional.ofNullable(productFactory.convertProductOnDTO(product))).orElse(null);
+   public ProductServiceImpl(@Autowired ProductFactory productFactory, @Autowired ProductRepository productRepository,
+         @Autowired BrandRepository brandRepository, @Autowired ImageRepository imageRepository) {
+      this.productFactory = productFactory;
+      this.productRepository = productRepository;
+      this.brandRepository = brandRepository;
+      this.imageRepository = imageRepository;
+      this.logger = LoggerFactory.getLogger(ProductServiceImpl.class);
    }
 
    @Override
-   public boolean createProduct(ProductDTO productDTO) {
+   public Optional<ProductResponseDTO> getProductBySKU(String sku) {
+      Optional<ProductEntity> productEntityOpt = productRepository.findBySku(sku);
+      return productEntityOpt.map(product -> Optional.ofNullable(productFactory.convertProductOnDTO(product))).orElse(null);
+   }
+
+   @Override
+   public boolean createProduct(ProductResponseDTO productResponseDTO) {
       try {
-         ProductEntity product = productFactory.createProduct(productDTO);
-         productRepository.save(product);
+         ProductEntity productEntity = productFactory.createProduct(productResponseDTO);
+         if (Objects.nonNull(productEntity)) {
+            productRepository.save(productEntity);
+            logger.info("Product {} created.", productEntity.getId());
+         } else {
+            logger.error("Product {} NOT created.", productResponseDTO.getId());
+         }
       } catch (Exception e) {
          logger.error(e.getMessage());
          return false;
@@ -37,9 +61,34 @@ public class ProductServiceImpl implements ProductService {
       return true;
    }
 
-   public ProductServiceImpl(@Autowired ProductFactory productFactory,@Autowired ProductRepository productRepository) {
-      this.productFactory = productFactory;
-      this.productRepository = productRepository;
-      this.logger = LoggerFactory.getLogger(ProductServiceImpl.class);
+   @Override
+   public Boolean updateProduct(String sku, ProductRequestDTO productRequestDTO) {
+      try {
+         Optional<ProductEntity> productEntityOpt = productRepository.findBySku(sku);
+         if (productEntityOpt.isPresent()) {
+            ProductEntity productEntity = productEntityOpt.get();
+            Optional<BrandEntity> brandEntityOpt = brandRepository.findById(productRequestDTO.getBrandId());
+            BrandEntity brandEntity = brandEntityOpt.orElse(null);
+            Optional<ImageEntity> imageEntityOpt = imageRepository.findById(productRequestDTO.getImageMainId());
+            ImageEntity imageEntity = imageEntityOpt.orElse(null);
+            if (brandEntity != null && imageEntity != null) {
+               productEntity.setName(productRequestDTO.getName());
+               productEntity.setBrand(brandEntity);
+               productEntity.setSize(productRequestDTO.getSize());
+               productEntity.setPrice(productRequestDTO.getPrice());
+               productEntity.setImageMain(imageEntity);
+
+               productRepository.save(productEntity);
+               logger.info("Product {} updated.", productEntity.getId());
+            } else {
+               logger.error("Product {} NOT updated.", productEntity.getId());
+               return false;
+            }
+         }
+      } catch (Exception e) {
+         logger.error(e.getMessage());
+         return false;
+      }
+      return true;
    }
 }

@@ -1,9 +1,9 @@
 package com.falabella.product.factories;
 
 import com.falabella.product.domain.ProductEntity;
-import com.falabella.product.dto.ProductDTO;
+import com.falabella.product.dto.ProductResponseDTO;
 
 public interface ProductFactory {
-   ProductEntity createProduct(ProductDTO productDTO);
-   ProductDTO convertProductOnDTO(ProductEntity productEntity);
+   ProductEntity createProduct(ProductResponseDTO productResponseDTO);
+   ProductResponseDTO convertProductOnDTO(ProductEntity productEntity);
 }

@@ -4,10 +4,12 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.falabella.product.dto.ProductDTO;
+import com.falabella.product.dto.ProductRequestDTO;
+import com.falabella.product.dto.ProductResponseDTO;
 
 @Service
 public interface ProductService {
-   Optional<ProductDTO> getProductBySKU(String sku);
-   boolean createProduct(ProductDTO productDTO);
+   Optional<ProductResponseDTO> getProductBySKU(String sku);
+   boolean createProduct(ProductResponseDTO productResponseDTO);
+   Boolean updateProduct(String sku, ProductRequestDTO productRequestDTO);
 }
